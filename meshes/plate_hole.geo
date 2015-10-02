@@ -1,4 +1,4 @@
-Include "quater_plate.geo";
+Include "plate.geo";
 
 // Remove previous surfaces
 Delete Physicals;
