@@ -229,6 +229,33 @@ classdef Mesh
                 h = scatter(obj.nodes(obj.elems(:),1),obj.nodes(obj.elems(:),2),'filled','MarkerFaceColor','k',varargin{:});
             end
         end
+        
+        function h = plotElemField(obj,data,varargin)
+        % Affiche un champs élément par élément moyenné sur les éléments
+        % Affiche en 1er la composante \sigma_11, mais un menu acessible
+        % par un clic droit permet de choisir les autres composantes
+        % \sigma_22 et \sigma_12
+            % Plot mesh
+            h = plot(obj,varargin{:});
+            h.FaceAlpha = 1;
+            
+            N = numel(data)/3/obj.nbElems;
+            % re-organise les données
+            data2 = zeros(obj.nbElems,3);
+            for i=1:3
+                data2(:,i) = sum(reshape(data(i:3:end),N,[]),1)/N;
+            end
+            % mise en place du menu
+            c = uicontextmenu;
+            uimenu(c,'Label','s11','Callback',{@setdata,h,1});
+            uimenu(c,'Label','s22','Callback',{@setdata,h,2});
+            uimenu(c,'Label','s12','Callback',{@setdata,h,3});
+            h.UserData = data2;
+            h.FaceVertexCData = data2(:,1);
+            h.FaceColor = 'flat';
+            h.LineStyle = 'none';
+            h.UIContextMenu = c;
+        end
     end
     
     methods(Access = protected)
@@ -262,5 +289,13 @@ classdef Mesh
                 end
             end
         end
+    end
+end
+
+function setdata(source,callbackdata,h,i)
+% Fonction nécessaire pour le menu déroulant pour la visualisation (voir
+% plotElemField et plotNodeField
+    if size(h.UserData,2) > 1
+        h.FaceVertexCData = h.UserData(:,i);
     end
 end
