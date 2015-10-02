@@ -18,7 +18,6 @@ dtop = domega.restrict(@(x) x(:,2) == H);
 dleft = domega.restrict(@(x) x(:,1) == 0);
 dbottom = domega.restrict(@(x) x(:,2) == 0 & x(:,1) >= a);
 
-return
 % Ecriture du système
 K = FEMMat(omega,1,1,B);
 F = FEMVec(dtop,Fd);
@@ -36,7 +35,7 @@ u(~cl_index) = K(~cl_index,~cl_index)\(F(~cl_index) - K(~cl_index,cl_index)*u(cl
 % Visualisation
 figure('Name','Solution');
   subplot(1,2,1)
-    plot(deform(omega,u_ex,1./max(abs(u_ex))),sigma);
+    plotElemField(deform(omega,u,1./max(abs(u))),stress(omega,B,u));
     xlabel('x');
     ylabel('y');
     colorbar;
@@ -44,7 +43,7 @@ figure('Name','Solution');
   subplot(1,2,2);
     plot(omega.border);
     hold on
-    quiver(omega.nodes(:,1),omega.nodes(:,2),u_ex(1:2:end),u_ex(2:2:end));
+    quiver(omega.nodes(:,1),omega.nodes(:,2),u(1:2:end),u(2:2:end));
     xlabel('x');
     ylabel('y');
     title('Displacement');
