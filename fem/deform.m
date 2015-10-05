@@ -1,14 +1,14 @@
 function new_mesh = deform(mesh,u,coeff)
-% Créer un maillage déformée à partir d'un champs de déplacement 2D
+% Creer un maillage deformee a partir d'un champs de deplacement 2D
 %
-% Paramètres:
+% Parametres:
 %   - le maillage initial
-%   - un champs de déplacement 2D
+%   - un champs de deplacement 2D
 %   - un coefficient d'amplification (optionel)
     
-    % Vérification des entrées
+    % Verification des entrees
     assert(isa(mesh,'Mesh'),'Objet maillage inconnu');
-    assert(isnumeric(u) && numel(u) == 2*mesh.nbNodes,'Mauvais champs de déplacement 2D');
+    assert(isnumeric(u) && numel(u) == 2*mesh.nbNodes,'Mauvais champs de deplacement 2D');
 
     if nargin == 2
         coeff = 1;
@@ -21,6 +21,6 @@ function new_mesh = deform(mesh,u,coeff)
         u = reshape(u(:),[],mesh.nbNodes)';
     end
     
-    % Création du nouveau maillage
+    % Creation du nouveau maillage
     new_mesh = Mesh(mesh.nodes+coeff*u,mesh.elems);
 end

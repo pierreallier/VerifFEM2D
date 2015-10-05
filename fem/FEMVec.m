@@ -1,14 +1,14 @@
 function A = FEMVec(omega,F)
-% Construit le vecteur b éléments finis du système Au=b, tel que :
+% Construit le vecteur b elements finis du systeme Au=b, tel que :
 %   b = \int_{omega} N^T.F dx
 %
 %   F est le vecteur d'effort.
 
-    % Vérification des données
-    assert(isa(omega,'Mesh'),'Paramètre #1 invalide : objet maillage type invalide');
-    assert(isnumeric(F) && numel(F) == 2,'Mauvaise représentation de l''effort');
+    % Verification des donnees
+    assert(isa(omega,'Mesh'),'Parametre #1 invalide : objet maillage type invalide');
+    assert(isnumeric(F) && numel(F) == 2,'Mauvaise representation de l''effort');
     
-    % Déterminant de la matrice jacobienne
+    % Determinant de la matrice jacobienne
     if omega.type == 2
         detJ = @(J) J(1:2:end,1).*J(2:2:end,2) - J(2:2:end,1).*J(1:2:end,2);
     elseif omega.type == 1
@@ -17,15 +17,15 @@ function A = FEMVec(omega,F)
         detJ = @(J) 1;
     end
     
-    % Intégration numérique de Gauss
+    % Integration numerique de Gauss
     [Wg,Xg] = gaussPoints(omega);
     
-    % Création de la matrice
+    % Creation de la matrice
     A = sparse(2*omega.nbNodes,1);
     for i=1:omega.nbElems
         ids = omega.elems(i,:); % ids des noeuds
         map = bsxfun(@(id,j) (id-1)*2+j,ids(:)',(1:2)'); % index de l'inconnue
-        Xe = omega.nodes(ids,:); % coordonnées de l'élément
+        Xe = omega.nodes(ids,:); % coordonnees de l'element
         
         [M1,J] = shapesFunctions(omega,Xg,Xe,0); % Evaluation des fonctions de formes
         M2 = repmat(F(:),numel(Wg),1); % Evaluation de l'effort aux points de Gauss

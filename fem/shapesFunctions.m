@@ -1,12 +1,12 @@
 function [N,J] = shapesFunctions(omega,a,x,od)
-% Evalue les fonctions de forme (ou ses dérivées) aux points de quadratures
-% a sur l'éléments dont les coordonnées des noeuds sont dans x, connaissant
+% Evalue les fonctions de forme (ou ses derivees) aux points de quadratures
+% a sur l'elements dont les coordonnees des noeuds sont dans x, connaissant
 % le maillage support.
 
     type = omega.type;
     order = omega.order;
     
-    % Coefficients polynomiaux (pour les éléments d'ordre 3-4 triangulaires)
+    % Coefficients polynomiaux (pour les elements d'ordre 3-4 triangulaires)
     if type == 2 && order > 2
         C1 = [1 0 0 0 0 0 0 0 0 0;-5.5 1 0 9 -4.5 0 0 0 0 0;-5.5 0 1 0 0 0 0 -4.5 9 0;9 -4.5 0 -22.5 18 0 0 0 0 0;9 0 -4.5 0 0 0 0 18 -22.5 0;18 0 0 -22.5 4.5 -4.5 -4.5 4.5 -22.5 27;-4.5 4.5 0 13.5 -13.5 0 0 0 0 0;-4.5 0 4.5 0 0 0 0 -13.5 13.5 0;-13.5 0 0 27 -13.5 13.5 0 0 13.5 -27;-13.5 0 0 13.5 0 0 13.5 -13.5 27 -27];
         C2 = [1 0 0 0 0 0 0 0 0 0 0 0 0 0 0;-25/3 -1 0 16 -12 16/3 0 0 0 0 0 0 0 0 0;-25/3 0 -1 0 0 0 0 0 0 16/3 -12 16 0 0 0;70/3 22/3 0 -208/3 76 -112/3 0 0 0 0 0 0 0 0 0;70/3 0 22/3 0 0 0 0 0 0 -112/3 76 -208/3 0 0 0;140/3 0 0 -208/3 28 -16/3 16/3 4 16/3 -16/3 28 -208/3 96 -32 -32; ...

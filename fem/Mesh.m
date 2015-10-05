@@ -1,20 +1,20 @@
 classdef Mesh
-% Classe r�pr�sentant un objet de type maillage.
+% Classe representant un objet de type maillage.
 %
 % Variables :
-%   - nodes : les coordonn�es des noeuds (2D)
-%   - elems : la table de connectivit� des �l�ments 
-%   - type : le type d'�l�ments (0 = Nodes ; 1 = Tress ; 2 = Triangle)
+%   - nodes : les coordonnees des noeuds (2D)
+%   - elems : la table de connectivite des elements 
+%   - type : le type d'elements (0 = Nodes ; 1 = Tress ; 2 = Triangle)
 
     properties (SetAccess = protected)
-        type; % le type d'�l�ments (0 = Nodes ; 1 = Tress ; 2 = Triangle)
-        nodes; % les coordonn�es des noeuds (2D)
-        elems; % la table de connectivit� des �l�ments 
+        type; % le type d'elements (0 = Nodes ; 1 = Tress ; 2 = Triangle)
+        nodes; % les coordonnees des noeuds (2D)
+        elems; % la table de connectivite des elements 
     end
 
     properties(Constant,Hidden)
-        % correspondance entre le n� de type d'�l�ment de GMSH avec celui
-        % de notre code (valeur n�gative pour les �l�ments non impl�ment�)
+        % correspondance entre le numero de type d'element de GMSH avec celui
+        % de notre code (valeur negative pour les elements non implemente)
         GMSH2ELEM_TYPE = [1 2 -1 -1 -1 -1 -1 1 2 -1 -1 -1 -1 -1 0 -1 -1 -1 -1 -1 2 -1 2 -1 -1 1 1];
     end
     
@@ -22,25 +22,25 @@ classdef Mesh
         %% CONSTRUCTEUR %%
         function obj = Mesh(varargin)
         % Constructeur d'un objet de type maillage.  
-        %   Mesh(filename) lit un fichier maillage GMSH � partir de son
+        %   Mesh(filename) lit un fichier maillage GMSH a partir de son
         %   chemin filename.
-        %   Mesh(coor,connec,type) cr�e un objet malliage � partir des
-        %   coordonn�es des noeuds (coor) et la table de connectivit� des
-        %   �l�ments (connec) de type (type). Par d�faut type=2.
+        %   Mesh(coor,connec,type) cree un objet malliage a partir des
+        %   coordonnees des noeuds (coor) et la table de connectivite des
+        %   elements (connec) de type (type). Par defaut type=2.
         
             assert(nargin <= 3,'Bad argument number in Mesh constructor');
             if nargin == 1 % 1er usage de la fonction
-                assert(ischar(varargin{1}) && exist(varargin{1},'file') == 2,'Le fichier sp�cifi� n''existe pas');
+                assert(ischar(varargin{1}) && exist(varargin{1},'file') == 2,'Le fichier specifie n''existe pas');
                 obj = obj.read(varargin{1});
             else % 2nd usage
                 if nargin == 2
                     obj.type = 2;
                 else
                     obj.type = varargin{3}(1);
-                    assert(abs(floor(obj.type)-obj.type) <= eps && obj.type <= 2 && obj.type >= 0,'Le type des �l�ments est incorrect');
+                    assert(abs(floor(obj.type)-obj.type) <= eps && obj.type <= 2 && obj.type >= 0,'Le type des elements est incorrect');
                 end
                 
-                % V�rification des donn�es
+                % Verification des donnees
                 assert(isnumeric(varargin{1}) && isnumeric(varargin{2}),'Mauvais arguments');
                 if size(varargin{1},1) == 0
                     obj.nodes = zeros(0,2);
@@ -55,7 +55,7 @@ classdef Mesh
                 end
                 obj.elems = floor(varargin{2}(~overflow_ids,:));
                 
-                assert(obj.order <= 4,'Seul des �l�ments d''ordre compris entre 1 et 4 sont autoris�');
+                assert(obj.order <= 4,'Seul des elements d''ordre compris entre 1 et 4 sont autorise');
             end
         end
         
@@ -71,12 +71,12 @@ classdef Mesh
         end
         
         function n = nbElems(obj)
-        % Le nombre d'�l�ments dans ce maillage
+        % Le nombre d'elements dans ce maillage
             n = size(obj.elems,1);
         end
         
         function n = order(obj)
-        % L'ordre des �l�ments du maillage
+        % L'ordre des elements du maillage
             switch obj.type
                 case 0 % Nodes
                     n = size(obj.elems,2);
@@ -88,7 +88,7 @@ classdef Mesh
         end
         
         function n = nbNodesPerElems(obj)
-        % le nombre de noeuds par �l�ments
+        % le nombre de noeuds par elements
             ord = obj.order; 
             switch obj.type
                 case 0 % Nodes
@@ -101,9 +101,9 @@ classdef Mesh
         end
         
         function h = elementSize(obj)
-        % Cette fonction calcule la taille caract�ristique de chaque
-        % �l�ment pr�sent dans ce maillage et retourne un vecteur de taille
-        % le nombre d'�l�ments.
+        % Cette fonction calcule la taille caracteristique de chaque
+        % element present dans ce maillage et retourne un vecteur de taille
+        % le nombre d'elements.
             h = zeros(obj.nbElems,1);
             if obj.type > 0
                 for i=1:numel(h)
@@ -114,8 +114,8 @@ classdef Mesh
         end
         
         function h = elementArea(obj)
-        % Cette fonction calcule l'aire de chaque �l�ment et retourne un
-        % vecteur de taille le nombre d'�l�ments.
+        % Cette fonction calcule l'aire de chaque element et retourne un
+        % vecteur de taille le nombre d'elements.
             if obj.type ~= 2
                 h = obj.elementSize;
             else
@@ -125,29 +125,29 @@ classdef Mesh
             end
         end
         
-        function [conn,eta,normal] = interfaceElems(obj) % NOT TESTED
-        % Calcule la table de connectivit� (conn) des interfaces.
+        function [conn,eta,normal] = interfaceElems(obj)
+        % Calcule la table de connectivite (conn) des interfaces.
         %
-        % Calcule �galement si besoin un tableau (eta) permettant de
-        % retrouver la correspondance entre les interface et les �l�ments
-        % et la valeur des normales de chaques interface d�crites dans la
-        % table de connectivit� conn. 
+        % Calcule egalement si besoin un tableau (eta) permettant de
+        % retrouver la correspondance entre les interface et les elements
+        % et la valeur des normales de chaques interface decrites dans la
+        % table de connectivite conn. 
         %
         % eta est de taille nb interface x nb elems contenant tel que:
         %   - eta(interface_i,elem_j) = 0 si l'interface i n'appartient pas
-        %   � l'�l�ment j, +/- 1 sinon.
-        %   - +1 si l'interface partag� par cet �l�ment est dans le m�me
-        %   sens que celui d�crit dans la table de connectivit� conn � la
-        %   ligne i; - -1 sinon (utile pour d�terminer le sens de la
+        %   a l'element j, +/- 1 sinon.
+        %   - +1 si l'interface partage par cet element est dans le meme
+        %   sens que celui decrit dans la table de connectivite conn a la
+        %   ligne i; - -1 sinon (utile pour determiner le sens de la
         %   normale)
         %
-        % normal est une matrice de taille nb interface x 2 o� chaque ligne
-        % k contient la normale [nx ny] de l'interface d�crite � la ligne k
+        % normal est une matrice de taille nb interface x 2 a chaque ligne
+        % k contient la normale [nx ny] de l'interface decrite a la ligne k
         % de la table conn. eta(:,j)*normal donne la normale de l'ensemble
-        % des interfaces apartenant � l'�l�ment j.
+        % des interfaces apartenant a l'element j.
         
             if obj.type ~= 2
-                error('La fonction interfaceELems ne marche que pour des �l�ments de type triangle');
+                error('La fonction interfaceELems ne marche que pour des elements de type triangle');
             end
             
             d = obj.order-1;
@@ -175,12 +175,12 @@ classdef Mesh
         %% MANIPULATIONS DE MAILLAGE %%
         
         function submesh = restrict(obj,fct)
-        % Restreint un maillage pour v�rifier une fonction
-        %   restrict(mesh,fct_handle) restreint le maillage � partir d'une
-        %   fonction prenant en entr�e les coordonn�es des noeuds et
-        %   retournant vrai si le noeuds appartient � ce domaine, faux
-        %   sinon. Seul les �l�ments dont tous les noeuds appartiennent au
-        %   domaine sont conserv�s.
+        % Restreint un maillage pour verifier une fonction
+        %   restrict(mesh,fct_handle) restreint le maillage a partir d'une
+        %   fonction prenant en entree les coordonnees des noeuds et
+        %   retournant vrai si le noeuds appartient a ce domaine, faux
+        %   sinon. Seul les elements dont tous les noeuds appartiennent au
+        %   domaine sont conserves.
         
             in_nodes = fct(obj.nodes);
             in_elems = all(in_nodes(obj.elems),2);
@@ -188,10 +188,10 @@ classdef Mesh
         end
         
         function submesh = border(obj,fct)
-        % border(mesh) Retourne un sous-maillage d�crivant le bord du domaine
+        % border(mesh) Retourne un sous-maillage decrivant le bord du domaine
         %
-        % border(mesh,fct) Retourne un sous-maillage d�crivant le bord du
-        % domaine dont les noeuds v�rifient la fonction fct donn�e (Voir
+        % border(mesh,fct) Retourne un sous-maillage decrivant le bord du
+        % domaine dont les noeuds verifient la fonction fct donnee (Voir
         % fonction restriction)
         %
         % Exemple :
@@ -209,7 +209,7 @@ classdef Mesh
                 border_nodes = accumarray(els(:),1) == 1;
                 submesh = Mesh(obj.nodes,find(border_nodes),0);
             else
-                error('Les �l�ments de type Node n''ont pas de bord');
+                error('Les elements de type Node n''ont pas de bord');
             end
             if nargin > 1
                 submesh = submesh.restrict(fct);
@@ -227,7 +227,7 @@ classdef Mesh
         end
         
         function h = plotElemField(obj,data,varargin)
-        % Affiche un champs �l�ment par �l�ment moyenn� sur les �l�ments
+        % Affiche un champs element par element moyenne sur les elements
         % Affiche en 1er la composante \sigma_11, mais un menu acessible
         % par un clic droit permet de choisir les autres composantes
         % \sigma_22 et \sigma_12
@@ -242,7 +242,7 @@ classdef Mesh
             d = dim*(dim+1)/2;
             
             N = numel(data)/d/obj.nbElems;
-            % re-organise les donn�es
+            % re-organise les donnees
             data2 = zeros(obj.nbElems,d);
             for i=1:d
                 data2(:,i) = sum(reshape(data(i:d:end),N,[]),1)/N;
@@ -267,7 +267,7 @@ classdef Mesh
         % Affiche un champs connu aux noeuds.
         % Affiche en 1er la composante u_1, mais un menu acessible
         % par un clic droit permet de choisir l'autre composantes
-        % u_2 (si il y a deux composantes par noeuds).
+        % u_2 (si il y a deux composantes par noeuds au moins).
             % Plot mesh
             h = plot(obj,varargin{:});
             set(h,'FaceAlpha',1);
@@ -290,15 +290,15 @@ classdef Mesh
     
     methods(Access = protected)
         function obj = read(obj,filename)
-        % Lit un fichier maillage GMSH � partir de son chemin filename et
+        % Lit un fichier maillage GMSH a partir de son chemin filename et
         % construit un objet Mesh
             fID = fopen(filename,'r');
             while ~feof(fID)
                 tline = fgetl(fID);
-                if strcmpi(tline,'$Nodes') % d�finition des noeuds
+                if strcmpi(tline,'$Nodes') % definition des noeuds
                     nb = sscanf(fgetl(fID), '%d',1);
                     obj.nodes = fscanf(fID,'%*d %f %f %*f',[2 nb])';
-                elseif strcmpi(tline,'$Elements') % d�finition des �l�ments
+                elseif strcmpi(tline,'$Elements') % definition des elements
                     nb = sscanf(fgetl(fID), '%d',1);
                     
                     els = zeros(nb,1);
@@ -308,14 +308,14 @@ classdef Mesh
                         if obj.GMSH2ELEM_TYPE(data(2)) == obj.type
                             els(i,:) = data(data(3)+4:end);
                         elseif obj.GMSH2ELEM_TYPE(data(2)) > obj.type
-                            % On ne garde que les �l�ments de plus grande dimension
+                            % On ne garde que les elements de plus grande dimension
                             obj.type = obj.GMSH2ELEM_TYPE(data(2));
                             els = zeros(nb,numel(data)-data(3)-3);
                             els(i,:) = data(data(3)+4:end);
                         end
                     end
                     
-                    obj.elems = els(any(els,2),:);% suppression des �l�ments inexistant
+                    obj.elems = els(any(els,2),:);% suppression des elements inexistant
                 end
             end
         end
@@ -323,8 +323,8 @@ classdef Mesh
 end
 
 function setdata(source,callbackdata,h,i)
-% Fonction n�cessaire pour le menu d�roulant pour la visualisation (voir
-% plotElemField et plotNodeField
+% Fonction necessaire pour le menu deroulant pour la visualisation (voir
+% plotElemField et plotNodeField)
     data = get(h,'UserData');
     if size(data,2) > 1
         set(h,'FaceVertexCData',data(:,i));

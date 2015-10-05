@@ -1,20 +1,20 @@
 function pos_filename = adaptation(omega,element_size_map,pos_filename)
-% Construit le fichier pos_filename nécessaire pour faire de l'adaptation
+% Construit le fichier pos_filename necessaire pour faire de l'adaptation
 
-% Paramètres obligatoires:
-%   - le maillage omega sur lequel les calculs ont été fait; 
-%   - un vecteur element_size_map contenant la taille optimale des éléments
-%   pour chaques éléments du maillage omega, de taille le nombre d'elements
+% Parametres obligatoires:
+%   - le maillage omega sur lequel les calculs ont ete fait; 
+%   - un vecteur element_size_map contenant la taille optimale des elements
+%   pour chaques elements du maillage omega, de taille le nombre d'elements
 %
-% Paramètre optionnel :
+% Parametre optionnel :
 %   - pos_filename : permet de specifier le nom du fichier de sortie. Par
-%   défaut, le chemin est 'adaptation.pos'.
+%   defaut, le chemin est 'adaptation.pos'.
 %
 % Retourne le chemin du fichier d'adaptation.
 
-    % Verification des paramètres
-    assert(isa(omega,'Mesh'),'Paramètre #1 invalide : objet de type invalide');
-    assert(isnumeric(element_size_map) && numel(element_size_map) == omega.nbElems,'Paramètre #2 invalide : mauvais type ou mauvaise taille');
+    % Verification des parametres
+    assert(isa(omega,'Mesh'),'Parametre #1 invalide : objet de type invalide');
+    assert(isnumeric(element_size_map) && numel(element_size_map) == omega.nbElems,'Parametre #2 invalide : mauvais type ou mauvaise taille');
     
     % Chemin du fichier de sortie
     if nargin < 3
@@ -23,14 +23,14 @@ function pos_filename = adaptation(omega,element_size_map,pos_filename)
         assert(ischar(pos_filename),'Chemin invalide.');
     end
 
-    % Transformation d'une donnée élément par élément à une donnée aux noeuds
+    % Transformation d'une donnee element par element a une donnee aux noeuds
     node_map = zeros(omega.nbNodes,1);
     for i=1:numel(node_map)
         elems_ids = any(omega.elems == i,2); % trouve le patch
         node_map(i) = mean(element_size_map(elems_ids)); % la moyenne des tailles sur ce patch
     end
     
-    % Créer le fichier d'adaptation nécessaire à GMSH
+    % Creer le fichier d'adaptation necessaire a GMSH
     fID = fopen(pos_filename,'w');
     fprintf(fID,'View "background mesh" {\n'); % Write the header
     for i=1:omega.nbElems

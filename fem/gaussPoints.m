@@ -1,6 +1,6 @@
 function [Wg,Xg] = gaussPoints(omega)
-% Calcule les poids Wg et les points Xg pour la méthode de quadrature de Gauss
-% (intégration) à partir d'un type d'élément spécifique (donnée par omega).
+% Calcule les poids Wg et les points Xg pour la methode de quadrature de Gauss
+% (integration) a partir d'un type d'element specifique (donnee par omega).
 
     switch omega.type
         case 2
@@ -29,7 +29,7 @@ function xw = linearQuad(order)
 % xw is a nx2 matrix where the 1st two columns are coordinates of
 % points and third one is the weights.
 %
-% Values from Analyse des solides déformables par la MEF (M. Bonnet)
+% Values from Analyse des solides deformables par la MEF (M. Bonnet)
 %
     N = 2*ceil((order+1)/2);
     switch N

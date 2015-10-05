@@ -1,15 +1,15 @@
 function [A,M] = FEMMat(omega,B)
-% Construit la matrice A éléments finis du système Au=b, tel que :
+% Construit la matrice A elements finis du systeme Au=b, tel que :
 %   A = \int_{omega} [\epsilon(N)]^T*B*[\epsilon(N)] dx
 %   et optionnellement
 %   M = \int_{omega} N^T*eye(2)*N dx
 %
-%   B est le tenseur de Hook, écrit sous forme matriciel avec les notations
+%   B est le tenseur de Hook, ecrit sous forme matriciel avec les notations
 %   de Voigt.
 
-    % Vérification des données
-    assert(isa(omega,'Mesh'),'Paramètre #1 invalide : objet maillage type invalide');
-    assert(isnumeric(B) && (all(size(B) == [3 3]) || all(size(B) == [2 2])),'Mauvaise représentation du tenseur de Hook');
+    % Verification des donnees
+    assert(isa(omega,'Mesh'),'Parametre #1 invalide : objet maillage type invalide');
+    assert(isnumeric(B) && (all(size(B) == [3 3]) || all(size(B) == [2 2])),'Mauvaise representation du tenseur de Hook');
     
     A = matrixAssembly(omega,1,B);
     if nargout == 2
@@ -18,18 +18,18 @@ function [A,M] = FEMMat(omega,B)
 end
 
 function A = matrixAssembly(omega,order,B)
-    % Déterminant de la matrice jacobienne
+    % Determinant de la matrice jacobienne
     detJ = @(J) J(1:2:end,1).*J(2:2:end,2) - J(2:2:end,1).*J(1:2:end,2);
     
-    % Intégration numérique de Gauss
+    % Integration numerique de Gauss
     [Wg,Xg] = gaussPoints(omega);
     
-    % Création de la matrice
+    % Creation de la matrice
     A = sparse(2*omega.nbNodes,2*omega.nbNodes);
     for i=1:omega.nbElems
         ids = omega.elems(i,:); % ids des noeuds
         map = bsxfun(@(id,j) (id-1)*2+j,ids(:)',(1:2)'); % index de l'inconnue
-        Xe = omega.nodes(ids,:); % coordonnées de l'élément
+        Xe = omega.nodes(ids,:); % coordonnees de l'element
         
         [M1,J] = shapesFunctions(omega,Xg,Xe,order); % Evaluation des fonctions de formes
         

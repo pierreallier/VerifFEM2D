@@ -1,7 +1,7 @@
-%% Script d'exemple de r�solution du probl�me �l�ments finis
+%% Script d'exemple de resolution du probleme elements finis
 addpath('./fem/');
 
-% Param�tres du probl�me
+% Parametres du probleme
 E = 200;
 nu = 0.3;
 B = E/(1+nu)/(1-2*nu)*[1-nu nu 0; nu 1-nu 0; 0 0 (1-2*nu)/2]; % Matrix de Hook (Avec les notations de Voigt)
@@ -9,8 +9,7 @@ Fd = 1000*[0 1];
 a = 1;
 
 % Charge le maillage
-%omega = Mesh(geo2msh('./meshes/plate_crack.geo'));
-omega = Mesh('./meshes/plate_crack_order2.msh');
+omega = Mesh(geo2msh('./meshes/plate_crack.geo'));
 
 % Extraction de maillage secondaires
 H = max(omega.nodes(:,2));
@@ -19,7 +18,7 @@ dtop = domega.restrict(@(x) x(:,2) == H);
 dleft = domega.restrict(@(x) x(:,1) == 0);
 dbottom = domega.restrict(@(x) x(:,2) == 0 & x(:,1) >= a);
 
-% Ecriture du syst�me
+% Ecriture du systeme
 K = FEMMat(omega,B);
 F = FEMVec(dtop,Fd);
 
@@ -30,7 +29,7 @@ u = zeros(size(K,2),1);
 [cl_index,u0] = CL(dleft,0,[1 0],dbottom,0,[0 1]);
 u(cl_index) = u0;
    
-% R�solution
+% Resolution
 u(~cl_index) = K(~cl_index,~cl_index)\(F(~cl_index) - K(~cl_index,cl_index)*u(cl_index));
 
 % Visualisation
