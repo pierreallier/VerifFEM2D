@@ -150,9 +150,9 @@ classdef Mesh
                 error('La fonction interfaceELems ne marche que pour des �l�ments de type triangle');
             end
             
-            d = omega.order-1;
-            conn = [omega.elems(:,[1,2,3+(1:d)]) ; omega.elems(:,[2,3,3+d+(1:d)]) ; ...
-                    omega.elems(:,[3,1,3+2*d+(1:d)])]; 
+            d = obj.order-1;
+            conn = [obj.elems(:,[1,2,3+(1:d)]) ; obj.elems(:,[2,3,3+d+(1:d)]) ; ...
+                    obj.elems(:,[3,1,3+2*d+(1:d)])]; 
 
             [~,border_ids,elems_ids] = unique(sort(conn,2),'rows','stable');
             conn = conn(border_ids,:);
@@ -161,24 +161,15 @@ classdef Mesh
                 % Calcule la table eta
                 elems_ids = reshape(elems_ids,[],3);
                 repeated_index = reshape(1:numel(elems_ids),[],3) == elems_ids;
-                eta = sparse(elems_ids,repmat((1:omega.nbElems)',1,3),repeated_index - ~repeated_index);
+                eta = sparse(elems_ids,repmat((1:obj.nbElems)',1,3),repeated_index - ~repeated_index);
             end
             
             if nargout >= 3
                 % Calcule les normales
-                normal = [-diff(obj.nodes(conn(:,1:2),2)) diff(obj.nodes(conn(:,1:2),1))]; 
+                normal = [-(obj.nodes(conn(:,1),2)-obj.nodes(conn(:,2),2)) (obj.nodes(conn(:,1),1)-obj.nodes(conn(:,2),1))]; 
+                n = sqrt(normal(:,1).^2+normal(:,2).^2);
+                normal = [normal(:,1)./n normal(:,2)./n];
             end
-        end
-        
-        % TODO Patchs
-        function n = nbPatchs(obj)
-            
-        end
-        
-        function ids = patch(obj,node_id) % NOT TESTED
-        % Retourne l'id des �l�ments appartenant aux patch li�e au noeuds node_id
-            tmp = 1:obj.nbElems;
-            ids = tmp(any(obj.elems == node_id,2));
         end
        
         %% MANIPULATIONS DE MAILLAGE %%
