@@ -77,8 +77,8 @@ function [N,J] = shapesFunctions(omega,a,x,od)
         
         if od == 1
             M = mat2cell(J,size(J,2)*ones(size(J,1)/size(J,2),1),size(J,2));
-            J = blkdiag(M{:});
-            N = J\DN;
+            J2 = blkdiag(M{:});
+            N = J2\DN;
             N = kron(N(1:2:end,:),[1 0;0 0;0 1]) + kron(N(2:2:end,:),[0 0;0 1;1 0]);
         end
     end
