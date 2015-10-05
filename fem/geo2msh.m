@@ -1,25 +1,25 @@
 function msh_filename = geo2msh(geo_filename,varargin)
-% Cette fonction permet de générer un maillage grâce à Gmsh depuis Matlab
-% et retourne le chemin vers le fichier maillage généré.
+% Cette fonction permet de gï¿½nï¿½rer un maillage grï¿½ce ï¿½ Gmsh depuis Matlab
+% et retourne le chemin vers le fichier maillage gï¿½nï¿½rï¿½.
 %
-% Paramètre obligatoires:
-%   - geo_filename : le chemin vers un fichier .geo à mailler
+% Paramï¿½tre obligatoires:
+%   - geo_filename : le chemin vers un fichier .geo ï¿½ mailler
 %
-% Paramètres optionnels:
-%   - msh_filename : le nom du fichier maillage où écrire (.msh)
+% Paramï¿½tres optionnels:
+%   - msh_filename : le nom du fichier maillage oï¿½ ï¿½crire (.msh)
 %   - pos_filename : un chemin vers un fichier d'adaptation (.pos)
-%   - order_val : un entier représentant l'ordre des éléments [1-4]
-%   - scale_val : un flottant représentant un facteur d'échelle de la taille des éléments
+%   - order_val : un entier reprï¿½sentant l'ordre des ï¿½lï¿½ments [1-4]
+%   - scale_val : un flottant reprï¿½sentant un facteur d'ï¿½chelle de la taille des ï¿½lï¿½ments
 %
-%   /!\ L'ordre des paramètres optionnel est quelconque sauf si scal_val
-%   est entier. Dans ce cas, il faut préciser l'ordre avant le facteur
-%   d'échelle.
+%   /!\ L'ordre des paramï¿½tres optionnel est quelconque sauf si scal_val
+%   est entier. Dans ce cas, il faut prï¿½ciser l'ordre avant le facteur
+%   d'ï¿½chelle.
 % Exemple:
 %   geo2msh('../meshes/plate_hole.geo')
 %   geo2msh('../meshes/plate_hole.geo','test.msh')
-%   geo2msh('../meshes/plate_hole.geo',1.5) facteur d'échelle à 1.5
-%   geo2msh('../meshes/plate_hole.geo',2) ordre fixé à 2
-%   geo2msh('../meshes/plate_hole.geo',1,2) ordre fixé à 1 et facteur d'échelle à 2
+%   geo2msh('../meshes/plate_hole.geo',1.5) facteur d'ï¿½chelle ï¿½ 1.5
+%   geo2msh('../meshes/plate_hole.geo',2) ordre fixï¿½ ï¿½ 2
+%   geo2msh('../meshes/plate_hole.geo',1,2) ordre fixï¿½ ï¿½ 1 et facteur d'ï¿½chelle ï¿½ 2
 %
     % valeurs par defaut
     scale_val = 1;
@@ -27,7 +27,7 @@ function msh_filename = geo2msh(geo_filename,varargin)
     pos_filename = '';
     msh_filename = [geo_filename(1:find(geo_filename == '.',1,'last')) 'msh'];
     
-    % lecture des paramètres optionnel
+    % lecture des paramï¿½tres optionnel
     string_ids = cellfun(@ischar,varargin);
     float_vals = varargin(cellfun(@(x) abs(floor(x)-x) >= eps,varargin(~string_ids)));
     integer_vals = varargin(cellfun(@(x) abs(floor(x)-x) <= eps,varargin(~string_ids)));
@@ -50,11 +50,11 @@ function msh_filename = geo2msh(geo_filename,varargin)
         end
     end
     
-    % Vérifications des paramètres
+    % Vï¿½rifications des paramï¿½tres
     assert(exist(geo_filename, 'file') == 2,['Fichier ' geo_filename ' introuvable.']);
-    assert(order_val > 0 & order_val < 4,'L''ordre des éléments est incorrect (entier de 1 à 4).');
+    assert(order_val > 0 & order_val < 4,'L''ordre des ï¿½lï¿½ments est incorrect (entier de 1 ï¿½ 4).');
     
-    % Génération de la commande
+    % Gï¿½nï¿½ration de la commande
     command = ['"' findGmshPath() '" "' geo_filename '" -2 -clscale ' num2str(scale_val) ' -order ' num2str(order_val) ' -o "' msh_filename '"'];
     if ~isempty(pos_filename)
         assert(exist(pos_filename, 'file') == 2,['Fichier ' pos_filename ' introuvable.']);
@@ -62,7 +62,10 @@ function msh_filename = geo2msh(geo_filename,varargin)
     end
     
     % Execution de la commande
-    disp(command)
+    disp(command);
+    if ~(ispc || ismac)
+        setenv('LD_LIBRARY_PATH', '');
+    end
     [err,cmdout] = system(command);
     if err
         error('geo2msh:BadCommand',['Une erreur s''est produite, abandon.\n' cmdout]);
