@@ -19,7 +19,7 @@ dleft = domega.restrict(@(x) x(:,1) == 0);
 dbottom = domega.restrict(@(x) x(:,2) == 0 & x(:,1) >= a);
 
 % Ecriture du système
-K = FEMMat(omega,1,1,B);
+K = FEMMat(omega,B);
 F = FEMVec(dtop,Fd);
 
 % Initialisation de l'inconnue

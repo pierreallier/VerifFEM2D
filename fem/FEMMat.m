@@ -32,10 +32,9 @@ function A = matrixAssembly(omega,order,B)
         Xe = omega.nodes(ids,:); % coordonnées de l'élément
         
         [M1,J] = shapesFunctions(omega,Xg,Xe,order); % Evaluation des fonctions de formes
-        M2 = shapesFunctions(omega,Xg,Xe,order); % Evaluation des fonctions de formes
         
         D = kron(diag(Wg.*detJ(J)),B); % Matrice pour la quadrature de Gauss
         
-        A(map(:),map(:)) = A(map(:),map(:))+(M1'*D*M2);
+        A(map(:),map(:)) = A(map(:),map(:))+(M1'*D*M1);
     end
 end
