@@ -1,16 +1,23 @@
-function A = FEMMat(omega,od1,od2,B)
+function [A,M] = FEMMat(omega,B)
 % Construit la matrice A éléments finis du système Au=b, tel que :
-%   A = \int_{omega} [d^{od1}N/dx]^T*B*[d^{od2}N/dx] dx
+%   A = \int_{omega} [\epsilon(N)]^T*B*[\epsilon(N)] dx
+%   et optionnellement
+%   M = \int_{omega} N^T*eye(2)*N dx
 %
-%   od1 et od2 sont les ordres de dérivations égaux à 0 ou 1. B est le
-%   tenseur de Hook, écrit sous forme matriciel avec les notations de
-%   Voigt.
+%   B est le tenseur de Hook, écrit sous forme matriciel avec les notations
+%   de Voigt.
 
     % Vérification des données
     assert(isa(omega,'Mesh'),'Paramètre #1 invalide : objet maillage type invalide');
-    assert((od1==0 || od1==1) && (od2==0 || od2==1),'L''ordre de dérivation doit être 0 ou 1');
-    assert(isnumeric(B) && all(size(B) == [3 3]),'Mauvaise représentation du tenseur de Hook');
+    assert(isnumeric(B) && (all(size(B) == [3 3]) || all(size(B) == [2 2])),'Mauvaise représentation du tenseur de Hook');
     
+    A = matrixAssembly(omega,1,B);
+    if nargout == 2
+        M = matrixAssembly(omega,0,eye(2));
+    end
+end
+
+function A = matrixAssembly(omega,order,B)
     % Déterminant de la matrice jacobienne
     detJ = @(J) J(1:2:end,1).*J(2:2:end,2) - J(2:2:end,1).*J(1:2:end,2);
     
@@ -24,8 +31,8 @@ function A = FEMMat(omega,od1,od2,B)
         map = bsxfun(@(id,j) (id-1)*2+j,ids(:)',(1:2)'); % index de l'inconnue
         Xe = omega.nodes(ids,:); % coordonnées de l'élément
         
-        [M1,J] = shapesFunctions(omega,Xg,Xe,od1); % Evaluation des fonctions de formes
-        M2 = shapesFunctions(omega,Xg,Xe,od2); % Evaluation des fonctions de formes
+        [M1,J] = shapesFunctions(omega,Xg,Xe,order); % Evaluation des fonctions de formes
+        M2 = shapesFunctions(omega,Xg,Xe,order); % Evaluation des fonctions de formes
         
         D = kron(diag(Wg.*detJ(J)),B); % Matrice pour la quadrature de Gauss
         

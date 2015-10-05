@@ -30,7 +30,7 @@ classdef Mesh
         
             assert(nargin <= 3,'Bad argument number in Mesh constructor');
             if nargin == 1 % 1er usage de la fonction
-                assert(ischar(varargin{1}) && exist(varargin{1}) == 2,'Le fichier spécifié n''existe pas');
+                assert(ischar(varargin{1}) && exist(varargin{1},'file') == 2,'Le fichier spécifié n''existe pas');
                 obj = obj.read(varargin{1});
             else % 2nd usage
                 if nargin == 2
@@ -170,13 +170,18 @@ classdef Mesh
             end
         end
         
+        % TODO Patchs
+        function n = nbPatchs(obj)
+            
+        end
+        
         function ids = patch(obj,node_id) % NOT TESTED
         % Retourne l'id des éléments appartenant aux patch liée au noeuds node_id
             tmp = 1:obj.nbElems;
             ids = tmp(any(obj.elems == node_id,2));
         end
        
-        %% MANIPULATIONS DE MAILLAGE%%
+        %% MANIPULATIONS DE MAILLAGE %%
         
         function submesh = restrict(obj,fct)
         % Restreint un maillage pour vérifier une fonction
@@ -239,20 +244,53 @@ classdef Mesh
             h = plot(obj,varargin{:});
             h.FaceAlpha = 1;
             
-            N = numel(data)/3/obj.nbElems;
+            dim = 2;
+            if numel(data) == obj.nbElems
+                dim = 1;
+            end
+            d = dim*(dim+1)/2;
+            
+            N = numel(data)/d/obj.nbElems;
             % re-organise les données
-            data2 = zeros(obj.nbElems,3);
-            for i=1:3
-                data2(:,i) = sum(reshape(data(i:3:end),N,[]),1)/N;
+            data2 = zeros(obj.nbElems,d);
+            for i=1:d
+                data2(:,i) = sum(reshape(data(i:d:end),N,[]),1)/N;
             end
             % mise en place du menu
             c = uicontextmenu;
-            uimenu(c,'Label','s11','Callback',{@setdata,h,1});
-            uimenu(c,'Label','s22','Callback',{@setdata,h,2});
-            uimenu(c,'Label','s12','Callback',{@setdata,h,3});
+            if dim > 1
+                uimenu(c,'Label','s11','Callback',{@setdata,h,1});
+            end
+            if dim >= 2
+                uimenu(c,'Label','s22','Callback',{@setdata,h,2});
+                uimenu(c,'Label','s12','Callback',{@setdata,h,3});
+            end
             h.UserData = data2;
             h.FaceVertexCData = data2(:,1);
             h.FaceColor = 'flat';
+            h.LineStyle = 'none';
+            h.UIContextMenu = c;
+        end
+        
+        function h = plotNodeField(obj,data,varargin)
+        % Affiche un champs connu aux noeuds.
+        % Affiche en 1er la composante u_1, mais un menu acessible
+        % par un clic droit permet de choisir l'autre composantes
+        % u_2 (si il y a deux composantes par noeuds).
+            % Plot mesh
+            h = plot(obj,varargin{:});
+            h.FaceAlpha = 1;
+            
+            c = uicontextmenu;
+            N = numel(data)/obj.nbNodes;
+            if N > 1
+                for i=1:N
+                    uimenu(c,'Label',['u' num2str(i)],'Callback',{@setdata,h,i});
+                end
+            end
+            h.UserData = reshape(data,N,[])';
+            h.FaceVertexCData = h.UserData(:,1);
+            h.FaceColor = 'interp';
             h.LineStyle = 'none';
             h.UIContextMenu = c;
         end

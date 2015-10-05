@@ -55,17 +55,17 @@ function msh_filename = geo2msh(geo_filename,varargin)
     assert(order_val > 0 & order_val < 4,'L''ordre des éléments est incorrect (entier de 1 à 4).');
     
     % Génération de la commande
-    command = ['"' findGmshPath() '" ' geo_filename ' -2 -clscale ' num2str(scale_val) ' -order ' num2str(order_val) ' -o ' msh_filename];
+    command = ['"' findGmshPath() '" "' geo_filename '" -2 -clscale ' num2str(scale_val) ' -order ' num2str(order_val) ' -o "' msh_filename '"'];
     if ~isempty(pos_filename)
         assert(exist(pos_filename, 'file') == 2,['Fichier ' pos_filename ' introuvable.']);
-        command = [ command ' -bgm ' pos_filename];
+        command = [ command ' -bgm "' pos_filename '"'];
     end
     
     % Execution de la commande
     disp(command)
     [err,cmdout] = system(command);
     if err
-        error(['Une erreur s''est produite, abandon.\n' cmdout]);
+        error('geo2msh:BadCommand',['Une erreur s''est produite, abandon.\n' cmdout]);
     end
     
 end
