@@ -1,14 +1,18 @@
-function [Wg,Xg] = gaussPoints(omega)
+function [Wg,Xg] = gaussPoints(omega,order)
 % Calcule les poids Wg et les points Xg pour la methode de quadrature de Gauss
-% (integration) a partir d'un type d'element specifique (donnee par omega).
+% (integration) a partir d'un type d'element specifique (donnee par omega) et
+% l'ordre order du polynome a integrer
 
+    if nargin ==1
+        order = 2*(omega.order-1);
+    end
     switch omega.type
         case 2
-            xw = triangularQuad(omega.order);
+            xw = triangularQuad(order);
             Wg = xw(:,end);
             Xg = xw(:,1:end-1);
         case 1
-            xw = linearQuad(omega.order);
+            xw = linearQuad(order);
             Wg = xw(:,end);
             Xg = xw(:,1:end-1);
         otherwise
@@ -33,7 +37,7 @@ function xw = linearQuad(order)
 %
     N = 2*ceil((order+1)/2);
     switch N
-        case 1
+        case {0,1}
             xw=[0 2];
         case 2
             xw=[-0.57735026918962573106 1
@@ -107,10 +111,9 @@ function xw = triangularQuad(N)
 %
 % Values from http://math2.uncc.edu/~shaodeng/TEACHING/math5172/Lectures/Lect_15.PDF
 %
-    N = 2*N;
     switch N
-        case 1
-            xw=[0.33333333333333 0.33333333333333 2.00000000000000];
+        case {0,1}
+            xw=[0.33333333333333 0.33333333333333 1.00000000000000];
         case 2
             xw=[0.16666666666667 0.16666666666667 0.33333333333333
                 0.16666666666667 0.66666666666667 0.33333333333333

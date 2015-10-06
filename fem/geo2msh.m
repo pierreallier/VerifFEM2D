@@ -52,7 +52,7 @@ function msh_filename = geo2msh(geo_filename,varargin)
     
     % Verifications des parametres
     assert(exist(geo_filename, 'file') == 2,['Fichier ' geo_filename ' introuvable.']);
-    assert(order_val > 0 & order_val < 4,'L''ordre des elements est incorrect (entier de 1 a 4).');
+    assert(order_val > 0 & order_val <= 4,'L''ordre des elements est incorrect (entier de 1 a 4).');
     
     % Generation de la commande
     command = ['"' findGmshPath() '" "' geo_filename '" -2 -clscale ' num2str(scale_val) ' -order ' num2str(order_val) ' -o "' msh_filename '"'];

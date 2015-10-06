@@ -25,12 +25,12 @@ function A = stress(omega,B,u)
         mapu = bsxfun(@(id,j) (id-1)*2+j,ids(:)',(1:2)'); % index de l'inconnue u
         maps = (i-1)*Ng*3 + (1:Ng*3); % index de l'inconnue sigma
         Xe = omega.nodes(ids,:); % coordonnees de l'element
-        
+
         M1 = shapesFunctions(omega,Xg,Xe,1);
-        
+
         D = kron(eye(Ng),B);
 
         A(maps(:),1) = A(maps(:),1) + D*M1*u(mapu(:));
     end
-    
+
 end
