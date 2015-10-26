@@ -1,5 +1,7 @@
 %% Script d'exemple de resolution du probleme elements finis
 addpath('./fem/');
+addpath('./eet/');
+addpath('./correction/');
 
 % Parametres du probleme
 E = 200;
@@ -9,7 +11,7 @@ Fd = 1000*[0 1];
 a = 1;
 
 % Charge le maillage
-omega = Mesh(geo2msh('./meshes/plate_crack.geo'));
+omega = Mesh(geo2msh('./meshes/plate_hole.geo'));
 
 % Extraction de maillage secondaires
 H = max(omega.nodes(:,2));
@@ -31,11 +33,12 @@ u(cl_index) = u0;
    
 % Resolution
 u(~cl_index) = K(~cl_index,~cl_index)\(F(~cl_index) - K(~cl_index,cl_index)*u(cl_index));
+sigma = stress(omega,B,u);
 
 % Visualisation
 figure('Name','Solution');
   subplot(1,2,1)
-    plotElemField(deform(omega,u,1./max(abs(u))),stress(omega,B,u));
+    plotElemField(deform(omega,u,1./max(abs(u))),sigma);
     xlabel('x');
     ylabel('y');
     colorbar;
@@ -47,3 +50,44 @@ figure('Name','Solution');
     xlabel('x');
     ylabel('y');
     title('Displacement');
+    
+[omega_adm,sigma_adm] = eet(omega,sigma,B,dtop,Fd,3);
+u_adm = interpField(omega,u,omega_adm);
+
+n = max(u);
+figure('Name','Interpolation');
+  subplot(1,2,1);
+    plot(omega.border);
+    hold on
+    quiver(omega.nodes(:,1),omega.nodes(:,2),u(1:2:end)./n,u(2:2:end)./n,2);
+    xlabel('x');
+    ylabel('y');
+    title('Displacement');
+  subplot(1,2,2);
+    plot(omega_adm.border);
+    hold on
+    quiver(omega_adm.nodes(:,1),omega_adm.nodes(:,2),u_adm(1:2:end)./n,u_adm(2:2:end)./n,0);
+    xlabel('x');
+    ylabel('y');
+    title('Interpolated Displacement');
+
+figure('Name','CRE');
+  subplot(1,3,1);
+    plotElemField(deform(omega,u,1./max(abs(u))),sigma);
+    xlabel('x');
+    ylabel('y');
+    colorbar;
+    title('Stresses');
+  subplot(1,3,2);
+    plotAdmField(omega_adm,sigma_adm);
+    xlabel('x');
+    ylabel('y');
+    colorbar;
+    title('Admissible Stresses');
+  subplot(1,3,3)
+    %plotElemField(omega,CRError(omega,sigma,B,u));
+    plotElemField(omega_adm,CRError(omega_adm,sigma_adm,B,u_adm));
+    xlabel('x');
+    ylabel('y');
+    title('CRE');
+    colorbar;

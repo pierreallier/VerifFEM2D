@@ -151,17 +151,20 @@ classdef Mesh
             end
             
             d = obj.order-1;
-            conn = [obj.elems(:,[1,2,3+(1:d)]) ; obj.elems(:,[2,3,3+d+(1:d)]) ; ...
-                    obj.elems(:,[3,1,3+2*d+(1:d)])]; 
-
+            % Correction du 23/10/15 - reordonne les connectivitees pour eta
+            conn = reshape([obj.elems(:,[1,2,3+(1:d)])';obj.elems(:,[2,3,3+d+(1:d)])'; ...
+                    obj.elems(:,[3,1,3+2*d+(1:d)])'],d+2,[])';
+                
             [~,border_ids,elems_ids] = unique(sort(conn,2),'rows','stable');
             conn = conn(border_ids,:);
 
             if nargout >= 2
                 % Calcule la table eta
-                elems_ids = reshape(elems_ids,[],3);
-                repeated_index = reshape(1:numel(elems_ids),[],3) == elems_ids;
-                eta = sparse(elems_ids,repmat((1:obj.nbElems)',1,3),repeated_index - ~repeated_index);
+                % Correction du 23/10/15 - correction de la matrice eta mal calculée
+                [~,first_unique_ids] = unique(elems_ids,'stable');
+                repeated_index = false(size(elems_ids));
+                repeated_index(first_unique_ids) = true;
+                eta = sparse(elems_ids,reshape(repmat(1:obj.nbElems,3,1),[],1),repeated_index - ~repeated_index);
             end
             
             if nargout >= 3
