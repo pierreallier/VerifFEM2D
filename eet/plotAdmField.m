@@ -1,6 +1,14 @@
-function h = plotHighOrderStress(omega,stress)
+function h = plotAdmField(omega,stress)
+% Affiche un champ definit sur les elements en plusieurs points de Gauss
+%
+% plotAdmField(x,s) affiche le champ de contrainte s sur le maillage
+% x, ou s est un champ définit sur les elements en plusieurs points de
+% Gauss.
 
-    % TODO quelque verifs
+    % Verifications
+    assert(isa(omega,'Mesh'),'objet maillage invalide');
+    assert(mod(numel(stress),omega.nbElems) == 0,'Mauvais champ de contrainte');
+    
     stress = stress(:);
     if omega.order == 1
         h = omega.plotElemField(stress);

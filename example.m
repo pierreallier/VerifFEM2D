@@ -1,7 +1,6 @@
 %% Script d'exemple de resolution du probleme elements finis
 addpath('./fem/');
 addpath('./eet/');
-addpath('./correction/');
 
 % Parametres du probleme
 E = 200;
@@ -51,7 +50,7 @@ figure('Name','Solution');
     ylabel('y');
     title('Displacement');
     
-[omega_adm,sigma_adm] = eet(omega,sigma,B,dtop,Fd,3);
+[omega_adm,sigma_adm] = eet(omega,sigma,B,dtop,Fd,dleft,dbottom,1);
 u_adm = interpField(omega,u,omega_adm);
 
 n = max(u);
@@ -72,22 +71,15 @@ figure('Name','Interpolation');
     title('Interpolated Displacement');
 
 figure('Name','CRE');
-  subplot(1,3,1);
+  subplot(1,2,1);
     plotElemField(deform(omega,u,1./max(abs(u))),sigma);
     xlabel('x');
     ylabel('y');
     colorbar;
     title('Stresses');
-  subplot(1,3,2);
-    plotAdmField(omega_adm,sigma_adm);
+  subplot(1,2,2);
+    plotAdmField(deform(omega_adm,u_adm,1./max(abs(u_adm))),sigma_adm);
     xlabel('x');
     ylabel('y');
     colorbar;
     title('Admissible Stresses');
-  subplot(1,3,3)
-    %plotElemField(omega,CRError(omega,sigma,B,u));
-    plotElemField(omega_adm,CRError(omega_adm,sigma_adm,B,u_adm));
-    xlabel('x');
-    ylabel('y');
-    title('CRE');
-    colorbar;

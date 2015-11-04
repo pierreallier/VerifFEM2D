@@ -1,22 +1,44 @@
-function [omega_adm,sigma_adm] = eet(omega,sigma,B,dfomega,Fd,k_ord)
+function [omega_adm,sigma_adm] = eet(omega,sigma,B,dfomega,Fd,clu1,clu2,k_ord)
+% Calcul le champ de contrainte admissible par la methode EET
+%
+% [x_adm,s_adm] = eet(x,s,K,dfx,F,clu,m) calcul le champ de contrainte
+% admissible par la methode EET sur le domaine maille x, dont la contrainte
+% element finis est s, tel que s = K*epsilon(u) (K l'operateur de Hook dans
+% la notation de Voigt). Cette solution doit verifier les conditions aux
+% limites en effort sur le bord dfx, de valeur le vecteur 2D F et u.e1=0
+% sur clu1 et u.e2=0 sur cl2. La contrainte admissible s_adm est alors
+% calculee sur un maillage admissible x_adm augmente en ordre, de valeur
+% p+m ou p est l'ordre du maillage x et m l'ordre choisi par l'utilisateur.
 
+    %% Verifications
+    assert(isa(omega,'Mesh') && isa(dfomega,'Mesh') && isa(clu1,'Mesh') && isa(clu2,'Mesh'),'Objet mailalge invalide');
+    assert(mod(numel(sigma),omega.nbElems*3) == 0,'Mauvais champ de contraintes');
+    assert(isnumeric(B) && size(B,1) == size(B,2) && size(B,1) == 3,'Mauvais tenseur de Hook');
+    assert(isnumeric(Fd) && numel(Fd) == 2,'Mauvais chargement');
+    assert(abs(ceil(k_ord) - k_ord) < eps && k_ord >= 0 && k_ord <= 3,'Mauvais ordre d''augmentation');
+    
     %% Initialisation
-    % Récupération des interfaces
+    % Recuperation des interfaces
     domega = omega.border;
     [interf,eta,n] = omega.interfaceElems;
     
-    % Recuperation du bord où le chargement est impose
-    loading_nodes_ids = unique(dfomega.elems(:));
+    % Recuperation du bord ou le chargement est impose
     border_nodes_ids = unique(omega.border.elems(:));
-    clu_nodes_ids = setdiff(border_nodes_ids,loading_nodes_ids);
+    clu_nodes_ids = unique(union(clu1.elems(:),clu2.elems(:)));
     loading_interf_ids = ismember(sort(interf,2),sort(dfomega.elems,2),'rows');
-
+    border_interf_ids = ismember(sort(interf,2),sort(domega.elems,2),'rows');
+    
+    cl1_interf_ids = ismember(sort(interf,2),sort(clu1.elems,2),'rows');
+    cl2_interf_ids = ismember(sort(interf,2),sort(clu2.elems,2),'rows');
+    
+    clf_interf_ids = not(cl1_interf_ids | cl2_interf_ids) & border_interf_ids;
+    
     %% Calcul de la condition de prolongement \int_{E} \omega_h \grad(\phi_i) dx
     detJ = @(J) J(1:2:end,1).*J(2:2:end,2) - J(2:2:end,1).*J(1:2:end,2);
     [Wg,Xg] = gaussPoints(omega);
     Ng = numel(Wg);
 
-    Q = zeros(size(omega.elems,2)*2,omega.nbElems); % stocké par [Fx^1 Fy^1 Fx^2 Fy^2 Fx^3 Fy^3 ...]' 1,2,3 l'id local des noeuds des elements pour chaque element
+    Q = zeros(size(omega.elems,2)*2,omega.nbElems); % stocke par [Fx^1 Fy^1 Fx^2 Fy^2 Fx^3 Fy^3 ...]' 1,2,3 l'id local des noeuds des elements pour chaque element
     for i=1:omega.nbElems
         nodes_ids = omega.elems(i,:);
         Xe = omega.nodes(nodes_ids,:);
@@ -54,12 +76,20 @@ function [omega_adm,sigma_adm] = eet(omega,sigma,B,dfomega,Fd,k_ord)
             end
             q(:,i) = q(:,i)/numel(elems_ids);
         end
+        
+        if clf_interf_ids(i) && not(loading_interf_ids(i))
+            q(:,i) = 0;
+        elseif cl1_interf_ids(i)
+            q(2:2:end,i) = 0;
+        elseif cl2_interf_ids(i)
+            q(1:2:end,i) = 0;
+        end
     end
     
     %% Calcul des flux equilibre pour chaque noeud
     interf_nodes = unique(interf(:));
     
-    b = zeros(2*size(interf,2),size(interf,1)); % stocké par [bx^1 by^1 bx^2 by^2 ...]' 1,2 l'id local des noeuds des interfaces pour chaque interface
+    b = zeros(2*size(interf,2),size(interf,1)); % stocke par [bx^1 by^1 bx^2 by^2 ...]' 1,2 l'id local des noeuds des interfaces pour chaque interface
     for k=1:numel(interf_nodes)
         i = interf_nodes(k);
         patch_elems_ids = any(omega.elems == i,2); % elements qui partagent ce noeud
@@ -68,57 +98,71 @@ function [omega_adm,sigma_adm] = eet(omega,sigma,B,dfomega,Fd,k_ord)
         Bn = kron(eta(patch_borders_ids,patch_elems_ids)',eye(2));
         Qn = Q(logical(kron((omega.elems == i)',[1;1])));
         
-        cond_prolong = sum([Qn(1:2:end) Qn(2:2:end)],1);
-        % verifications condtions noeud interieur
-%         if all(border_nodes_ids ~= i)
-%             disp(['Condition sur le noeud ' num2str(i) ' interieur : ' num2str(cond_prolong)]);
-%         end
-        
-        % On retire les équations de compatibilité si noeud interieur/bord du chargement
-        if all(clu_nodes_ids ~= i)
+        % blocage du noyau
+        if all(clu_nodes_ids ~= i)  
+            % On retire 2 equations de compatibilite si noeud interieur ou
+            % chargement pur
             Bn = Bn(1:end-2,:);
             Qn = Qn(1:end-2);
+        elseif any(cl1_interf_ids(patch_borders_ids))
+            Bn = Bn(1:end-1,:);
+            Qn = Qn(1:end-1);
+        elseif any(cl2_interf_ids(patch_borders_ids))
+            Bn = Bn([1:end-2 end],:);
+            Qn = Qn([1:end-2 end]);
         end
 
         % Ajout des conditions de chargement
-        if any(loading_nodes_ids == i)
-            Cn = diag(loading_interf_ids(patch_borders_ids));
+        if any(border_nodes_ids == i)
+            Cn = diag(border_interf_ids(patch_borders_ids));
             Cn = kron(Cn(any(Cn,2),:),eye(2));
 
             qn = q(logical(kron((interf == i)',[1;1])));
-            qn = qn(logical(kron(loading_interf_ids(patch_borders_ids),[1;1])));
+            % Mise a 0 des qn qui ne sont sur le bord du chargement
+            qn(~logical(kron(loading_interf_ids(patch_borders_ids),[1;1]))) = 0;
+            % restriction aux bords
+            qn = qn(logical(kron(border_interf_ids(patch_borders_ids),[1;1])));
             
-            % verification conditions
-            cond_prolong = cond_prolong - sum([qn(1:2:end) qn(2:2:end)],1);
-%             disp(['Condition sur le noeud ' num2str(i) ' du bord : ' num2str(cond_prolong)]);
-
-            Bn = [Cn;Bn]; %#ok<AGROW>
-            Qn = [qn;Qn]; %#ok<AGROW>
+            % Suppression des relations bloquee en deplacement
+            if any(cl1_interf_ids(patch_borders_ids) & border_interf_ids(patch_borders_ids))
+                id = cl1_interf_ids(patch_borders_ids);
+                id = find(id(border_interf_ids(patch_borders_ids)));
+                Cn(2*(id-1)+1,:) = NaN;
+                qn(2*(id-1)+1) = NaN;
+            end
+            if any(cl2_interf_ids(patch_borders_ids) & border_interf_ids(patch_borders_ids))
+                id = cl2_interf_ids(patch_borders_ids);
+                id = find(id(border_interf_ids(patch_borders_ids)));
+                Cn(2*id,:) = NaN;
+                qn(2*id) = NaN;
+            end
+            
+            Bn = [Cn(~isnan(Cn(:,1)),:);Bn]; %#ok<AGROW>
+            Qn = [qn(~isnan(qn));Qn]; %#ok<AGROW>
         end
 
         % Ajout de conditions supplementaires
         if size(Bn,1) < size(Bn,2)
             M = eye(size(Bn,2));
             bn = q(logical(kron((interf == i)',[1;1])));
-
+            
             Bn = [M Bn' ; Bn zeros(size(Bn,1))]; %#ok<AGROW>
             Qn = [M*bn;Qn]; %#ok<AGROW>
         else
             Bn = Bn(1:size(Bn,2),:);
-            Qn = Qn(1:size(Bn,2));
+            Qn = Qn(1:size(Bn,2),:);
         end
-
-        % Resolution
-        bn = Bn\Qn;
-        b(logical(kron(interf' == i,[1;1]))) = bn(1:2*sum(patch_borders_ids));
         
+        bn = Bn\Qn;
+
+        b(logical(kron(interf' == i,[1;1]))) = bn(1:2*sum(patch_borders_ids));
     end
     
     %% Calcul des flux pour chaque interface
     detJ = @(J) sqrt(J(:,1).^2+J(:,2).^2);
     [Wg,Xg] = gaussPoints(domega);
     
-    F = zeros(2*size(interf,2),size(interf,1));% stocké par [bx^1 by^1 bx^2 by^2 ...]' 1,2 l'id local des noeuds des interfaces pour chaque interface
+    F = zeros(2*size(interf,2),size(interf,1));% stocke par [bx^1 by^1 bx^2 by^2 ...]' 1,2 l'id local des noeuds des interfaces pour chaque interface
     for i=1:size(interf,1)
         nodes_ids = interf(i,:);
         Xe = omega.nodes(nodes_ids,:);
@@ -129,6 +173,7 @@ function [omega_adm,sigma_adm] = eet(omega,sigma,B,dfomega,Fd,k_ord)
         F(:,i) = (M2'*D*M2)\b(:,i);
     end
     
+    %% Calcul d'un nouveau maillage
     d = omega.order;
     if k_ord
         switch d + k_ord
@@ -167,7 +212,7 @@ function [omega_adm,sigma_adm] = eet(omega,sigma,B,dfomega,Fd,k_ord)
         interf_adm = interf;
     end
     
-    %% % Interpolation du flux equilibre sur les nouvelles interfaces
+    %% Interpolation du flux equilibre sur les nouvelles interfaces
     
     switch d + k_ord
         case 1
@@ -175,7 +220,7 @@ function [omega_adm,sigma_adm] = eet(omega,sigma,B,dfomega,Fd,k_ord)
         case 2
            c = [-1;1;0]; 
         case 3
-           c = [-1;1;-2/3;2/3];  
+           c = [-1;1;-1/3;1/3];  
         case 4
            c = [-1;1;-1/2;0;1/2];   
         otherwise
@@ -183,7 +228,7 @@ function [omega_adm,sigma_adm] = eet(omega,sigma,B,dfomega,Fd,k_ord)
     end
 
     M1 = shapesFunctions(domega,c,[],0);
-    F_adm = M1*F; % stocké par [bx^1 by^1 bx^2 by^2 ...]' 1,2 l'id local des noeuds des interfaces pour chaque interface
+    F_adm = M1*F; % stocke par [bx^1 by^1 bx^2 by^2 ...]' 1,2 l'id local des noeuds des interfaces pour chaque interface
 
     warning_error = warning('error','MATLAB:nearlySingularMatrix'); %#ok<CTPCT>
     %% Reconstruction du champ equilibre
@@ -192,7 +237,7 @@ function [omega_adm,sigma_adm] = eet(omega,sigma,B,dfomega,Fd,k_ord)
     detJb = @(J) sqrt(J(:,1).^2+J(:,2).^2);
 
     [Wg,Xg] = gaussPoints(omega_adm);
-    [Wgb,Xgb] = gaussPoints(domega_adm);
+    [Wgb,Xgb] = gaussPoints(domega_adm,2*omega_adm.order);
 
     sigma_adm = zeros(numel(Wg)*3,omega_adm.nbElems);
     for i=1:omega_adm.nbElems
@@ -207,11 +252,12 @@ function [omega_adm,sigma_adm] = eet(omega,sigma,B,dfomega,Fd,k_ord)
         % Second membre
         Q = zeros(2*numel(nodes_ids),1);
         border_elems = find(eta(:,i));
+        
         for j=1:numel(border_elems)
             border_nodes_ids = interf_adm(border_elems(j),:);
             Xe = omega_adm.nodes(border_nodes_ids,:);
 
-            % retrouver les indices des noeuds localement à l'element
+            % retrouver les indices des noeuds localement a l'element
             [map,~] = find(bsxfun(@rdivide,nodes_ids(:),border_nodes_ids(:)') == 1);
             map = [(map(:)-1)*2+1 map(:)*2]';
 
@@ -221,26 +267,28 @@ function [omega_adm,sigma_adm] = eet(omega,sigma,B,dfomega,Fd,k_ord)
             Q(map(:)) = Q(map(:)) + eta(border_elems(j),i)*N1'*D*(N1*F_adm(:,border_elems(j)));    
         end
         
-        % Verification
-%         eq = [sum(Q(1:2:end)) sum(Q(2:2:end))];
-%         if any(eq > 10^-10)
-%             disp(['Equilibre non verifié sur l''elem ' num2str(i) ' : ' num2str(eq)]);
-%         end
-        
+        u = zeros(2*size(omega_adm.elems,2),1);
         % calcul le deplacement du probleme en bloquant les mvts rigide
         try
-            u = zeros(2*size(omega_adm.elems,2),1);
             u(2:end-2) = K(2:end-2,2:end-2)\Q(2:end-2);
         catch err
             if strcmpi(err.identifier,'MATLAB:nearlySingularMatrix')
-                warning(['Matrices singulière pour l''element ' num2str(i) '.Resultats possiblement incorrect.']);
+                try
+                    u(1:end-3) = K(1:end-3,1:end-3)\Q(1:end-3);
+                catch err
+                    if strcmpi(err.identifier,'MATLAB:nearlySingularMatrix')
+                        warning(['Matrices singuliere pour l''element ' num2str(i) '.Resultats possiblement incorrect.']);
+                    else
+                        rethrow(err);
+                    end
+                end
             else
                 warning(warning_error);
                 rethrow(err);
             end
         end
 
-        % calcul le champ equilibre resultant (au points de gauss)
+        % calcul le champ equilibre resultant (aux points de gauss)
         D = kron(eye(numel(Wg)),B);
         sigma_adm(:,i) = D*M1*u;
     end

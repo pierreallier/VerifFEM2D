@@ -1,4 +1,11 @@
 function u_new = interpField(omega,u,omega_new)
+% interpolation un champ de deplacement (aux noeuds) sur un maillage
+% augmentee en ordre
+%
+% u_int = interpField(x,u,x_int) interpole le champ de deplacement (aux
+% noeuds) definit sur le maillage x sur le nouveau maillage x_int issu
+% d'une augmentation en ordre du maillage x et retourne le champ interpole
+% u_int.
 
     assert(isa(omega,'Mesh') && isa(omega_new,'Mesh'),'Mauvais objet de type maillage');
     assert(omega.type == 2 && omega_new.type == 2,'Seul l''interpolation sur des maillages triangulaires est possible');
@@ -27,32 +34,6 @@ function u_new = interpField(omega,u,omega_new)
             elem_matchs(i) = id;
         end
     end
-    
-%     figure('Name','Interpolation');
-%       subplot(2,2,1);
-%         plot(omega);
-%         hold on
-%         scatter(omega.nodes(:,1),omega.nodes(:,2),'filled','k');
-%         text(omega.nodes(:,1),omega.nodes(:,2),strsplit(num2str(1:omega.nbNodes)),'HorizontalAlignment','center','VerticalAlignment','bottom','Color','r');
-%         g = gravityElemCenter(omega);
-%         text(g(:,1),g(:,2),strsplit(num2str(1:omega.nbElems)),'HorizontalAlignment','center','VerticalAlignment','bottom','Color','g');
-%         title('Old Mesh');
-%       subplot(2,2,2);
-%         plot(omega_new);
-%         hold on
-%         scatter(omega_new.nodes(:,1),omega_new.nodes(:,2),'filled','k');
-%         text(omega_new.nodes(:,1),omega_new.nodes(:,2),strsplit(num2str(1:omega_new.nbNodes)),'HorizontalAlignment','center','VerticalAlignment','bottom','Color','r');
-%         g = gravityElemCenter(omega_new);
-%         text(g(:,1),g(:,2),strsplit(num2str(1:omega_new.nbElems)),'HorizontalAlignment','center','VerticalAlignment','bottom','Color','g');
-%         title('New mesh');
-%      subplot(2,2,3)
-%         bar(1:numel(node_matchs),node_matchs);
-%         xlabel('old nodes id');
-%         ylabel('new nodes id');
-%      subplot(2,2,4)
-%         bar(1:numel(elem_matchs),elem_matchs);
-%         xlabel('old elems id');
-%         ylabel('new elems id');   
      
     % maps de correspondances
     map = @(x) kron(2*(x-1),[1;1]) + repmat([1;2],size(x));
